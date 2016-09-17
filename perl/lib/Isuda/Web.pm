@@ -144,7 +144,7 @@ get '/' => [qw/set_name/] => sub {
         LIMIT $INDEX_PER_PAGE
         OFFSET @{[ $INDEX_PER_PAGE * ($page-1) ]}
     ]);
-    my $star_map = $self->load_stars_multi(map { $_->{keyword} @$entries });
+    my $star_map = $self->load_stars_multi(map { $_->{keyword} } @$entries );
 
     my $keyword_re;
     foreach my $entry (@$entries) {
