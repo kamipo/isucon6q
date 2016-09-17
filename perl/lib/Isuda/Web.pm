@@ -99,6 +99,9 @@ get '/initialize' => sub {
     # CREATE TABLE entry_keyword_regexp (regex TEXT COLLATE utf8mb4_bin) ENGINE=MyISAM;
     $self->remake_entry_keyword_regexp;
 
+    # CREATE TABLE entry_cache ( entry_id bigint unsigned NOT NULL, html TEXT COLLATE utf8mb4_bin, PRIMARY KEY(entry_id) );
+    $self->remake_entry_cache;
+
     $c->render_json({
         result => 'ok',
     });
@@ -137,30 +140,36 @@ post '/stars' => sub {
     });
 };
 
+my $INDEX_PER_PAGE = 10;
 get '/' => [qw/set_name/] => sub {
     my ($self, $c)  = @_;
 
-    my $PER_PAGE = 10;
     my $page = $c->req->parameters->{page} || 1;
 
     my $entries = $self->dbh->select_all(qq[
-        SELECT * FROM entry
+        SELECT
+          keyword,
+          IF(html IS NULL, description, NULL) AS description,
+          html
+        FROM entry
+        LEFT JOIN entry_cache ON entry.id=entry_cache.entry_id
         ORDER BY updated_at DESC
-        LIMIT $PER_PAGE
-        OFFSET @{[ $PER_PAGE * ($page-1) ]}
+        LIMIT $INDEX_PER_PAGE
+        OFFSET @{[ $INDEX_PER_PAGE * ($page-1) ]}
     ]);
     my $keyword_re = $self->load_entry_keyword_regexp;
     foreach my $entry (@$entries) {
-        $entry->{html}  = $self->htmlify($c, $entry->{description}, $keyword_re);
-        $entry->{stars} = $self->load_stars($entry->{keyword});
+        $entry->{html}  //= $self->htmlify($c, $entry->{description}, $keyword_re);
+        $entry->{stars}   = $self->load_stars($entry->{keyword});
     }
 
     my $total_entries = $self->dbh->select_one(q[
         SELECT count FROM entry_count
     ]);
-    my $last_page = ceil($total_entries / $PER_PAGE);
+    my $last_page = ceil($total_entries / $INDEX_PER_PAGE);
     my @pages = (max(1, $page-5)..min($last_page, $page+5));
 
+    # entries は keyword, html, stars だけ使ってる
     $c->render('index.tx', { entries => $entries, page => $page, last_page => $last_page, pages => \@pages });
 };
 
@@ -193,6 +202,7 @@ post '/keyword' => [qw/set_name authenticate/] => sub {
     ]);
 
     $self->remake_entry_keyword_regexp;
+    $self->remake_entry_cache;
 
     $c->redirect('/');
 };
@@ -265,12 +275,17 @@ get '/keyword/:keyword' => [qw/set_name/] => sub {
     my $keyword = $c->args->{keyword} // $c->halt(400);
 
     my $entry = $self->dbh->select_row(qq[
-        SELECT * FROM entry
+        SELECT
+          keyword,
+          IF(html IS NULL, description, NULL) AS description,
+          html
+        FROM entry
+        LEFT JOIN entry_cache ON entry.id=entry_cache.entry_id
         WHERE keyword = ?
     ], $keyword);
     $c->halt(404) unless $entry;
-    $entry->{html} = $self->htmlify($c, $entry->{description}, $self->load_entry_keyword_regexp);
-    $entry->{stars} = $self->load_stars($entry->{keyword});
+    $entry->{html}  //= $self->htmlify($c, $entry->{description}, $self->load_entry_keyword_regexp);
+    $entry->{stars}   = $self->load_stars($entry->{keyword});
 
     $c->render('keyword.tx', { entry => $entry });
 };
@@ -294,9 +309,32 @@ post '/keyword/:keyword' => [qw/set_name authenticate/] => sub {
     ]);
 
     $self->remake_entry_keyword_regexp;
+    $self->remake_entry_cache;
 
     $c->redirect('/');
 };
+
+sub remake_entry_cache {
+    my $self = shift;
+
+    my $entries = $self->dbh->select_all(qq[
+        SELECT id, description FROM entry
+        ORDER BY updated_at DESC
+        LIMIT $INDEX_PER_PAGE
+    ]);
+
+    $self->dbh->query(q[
+        DELETE FROM entry_cache
+    ]);
+
+    my $keyword_re = $self->load_entry_keyword_regexp;
+    foreach my $entry (@$entries) {
+        my $html = $self->htmlify($c, $entry->{description}, $keyword_re);
+        $self->dbh->query(q[
+             INSERT INTO entry_cache SET entry_id=?, html=?
+        ], $entry->{id}, $entry->{html});
+    }
+}
 
 sub remake_entry_keyword_regexp {
     my $self = shift;
