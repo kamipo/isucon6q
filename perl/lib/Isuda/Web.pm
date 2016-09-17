@@ -157,9 +157,12 @@ get '/' => [qw/set_name/] => sub {
         LIMIT $INDEX_PER_PAGE
         OFFSET @{[ $INDEX_PER_PAGE * ($page-1) ]}
     ]);
-    my $keyword_re = $self->load_entry_keyword_regexp;
+    my $keyword_re;
     foreach my $entry (@$entries) {
-        $entry->{html}  //= $self->htmlify($c, $entry->{description}, $keyword_re);
+        unless (defined $entry->{html}) {
+            $keyword_re    //= $self->load_entry_keyword_regexp;
+            $entry->{html}   = $self->htmlify($c, $entry->{description}, $keyword_re);
+        }
         $entry->{stars}   = $self->load_stars($entry->{keyword});
     }
 
