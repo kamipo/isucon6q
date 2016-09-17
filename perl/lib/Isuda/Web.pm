@@ -56,12 +56,14 @@ filter 'set_name' => sub {
         my ($self, $c) = @_;
         my $user_id = $c->env->{'psgix.session'}->{user_id};
         my $user_name = $c->env->{'psgix.session'}->{user_name};
+        #print "$user_id:$user_name\n";
         if ($user_id) {
             $c->stash->{user_id} = $user_id;
-            $c->stash->{user_name} = $self->dbh->select_one(q[
-                SELECT name FROM user
-                WHERE id = ?
-            ], $user_id);
+            $c->stash->{user_name} = $user_name;
+            #$c->stash->{user_name} = $self->dbh->select_one(q[
+            #    SELECT name FROM user
+            #    WHERE id = ?
+            #], $user_id);
             $c->halt(403) unless defined $c->stash->{user_name};
         }
         $app->($self,$c);
