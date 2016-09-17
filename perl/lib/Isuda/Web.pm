@@ -85,9 +85,6 @@ get '/initialize' => sub {
         DELETE FROM entry WHERE id > ?
     ], $default_entry_min_id);
     $self->dbh->query('TRUNCATE star');
-    #my $origin = config('isutar_origin');
-    #my $url = URI->new("$origin/initialize");
-    #Furl->new->get($url);
 
     # create table entry_count ( count int );
     # insert into entry_count set count=0;
