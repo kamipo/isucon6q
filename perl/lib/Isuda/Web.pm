@@ -107,18 +107,6 @@ get '/initialize' => sub {
     });
 };
 
-get '/stars' => sub {
-    my ($self, $c) = @_;
-
-    my $stars = $self->dbh->select_all(q[
-        SELECT * FROM star WHERE keyword = ?
-    ], $c->req->parameters->{keyword});
-
-    $c->render_json({
-        stars => $stars,
-    });
-};
-
 post '/stars' => sub {
     my ($self, $c) = @_;
     my $keyword = $c->req->parameters->{keyword};
