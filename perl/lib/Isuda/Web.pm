@@ -396,7 +396,7 @@ sub load_stars {
     my ($self, $keyword) = @_;
 
     my $stars = $self->dbh->select_all(q[
-        SELECT * FROM star WHERE keyword = ?
+        SELECT user_name FROM star WHERE keyword = ?
     ], $keyword);
 
     $stars;
