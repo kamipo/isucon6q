@@ -20,10 +20,10 @@ builder {
         session_key => "isuda_session",
         secret      => 'tonymoris';
 
-    enable 'Profiler::NYTProf',
-        enable_profile       => sub { $$ % 2 == 0 },
-        env_nytprof          => 'start=no:addpid=0:file=/dev/null',
-        profiling_result_dir => sub { '/tmp/profile' },
-        enable_reporting     => 1;
+#    enable 'Profiler::NYTProf',
+#        enable_profile       => sub { $$ % 2 == 0 },
+#        env_nytprof          => 'start=no:addpid=0:file=/dev/null',
+#        profiling_result_dir => sub { '/tmp/profile' },
+#        enable_reporting     => 1;
     $app;
 };
