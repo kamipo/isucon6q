@@ -109,14 +109,13 @@ get '/initialize' => sub {
 
 post '/stars' => sub {
     my ($self, $c) = @_;
-    my $keyword = $c->req->parameters->{keyword};
+    my $keyword = $c->req->parameters->{keyword} // $c->halt(404);
 
-    my $origin = $ENV{ISUDA_ORIGIN} // 'http://localhost:5000';
-    my $url = "$origin/keyword/" . uri_escape_utf8($keyword);
-    my $res = Furl->new->get($url);
-    unless ($res->is_success) {
-        $c->halt(404);
-    }
+    my $entry = $self->dbh->select_row(qq[
+        SELECT 1 FROM entry WHERE keyword = ?
+    ], $keyword);
+
+    $c->halt(404) unless $entry;
 
     $self->dbh->query(q[
         INSERT INTO star (keyword, user_name, created_at)
