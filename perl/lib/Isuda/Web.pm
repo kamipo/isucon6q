@@ -214,7 +214,7 @@ post '/keyword' => [qw/set_name authenticate/] => sub {
         UPDATE entry_count SET count=count+1
     ]);
 
-    my $re = $self->remake_entry_keyword_regexp;
+    $self->remake_entry_keyword_regexp;
 
     my $entries = $self->dbh->select_all(qq[
         SELECT id, keyword, description FROM entry
@@ -222,7 +222,7 @@ post '/keyword' => [qw/set_name authenticate/] => sub {
 
     my %kw2sha;
     my $content = $description;
-    $content =~ s{($re|$RE)}{
+    $content =~ s{($keyword|$RE)}{
         my $kw = $1;
         $kw2sha{$kw} = "isuda_" . sha1_hex(encode_utf8($kw));
     }eg;
