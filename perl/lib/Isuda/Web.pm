@@ -111,15 +111,15 @@ post '/stars' => sub {
     my $keyword = $c->req->parameters->{keyword} // $c->halt(404);
 
     my $entry = $self->dbh->select_row(qq[
-        SELECT 1 FROM entry WHERE keyword = ?
+        SELECT id FROM entry WHERE keyword = ?
     ], $keyword);
 
     $c->halt(404) unless $entry;
 
     $self->dbh->query(q[
-        INSERT INTO star (keyword, user_name, created_at)
-        VALUES (?, ?, NOW())
-    ], $keyword, $c->req->parameters->{user});
+        INSERT INTO star (entry_id, user_name)
+        VALUES (?, ?)
+    ], $entry->{id}, $c->req->parameters->{user});
 
     $c->render_json({
         result => 'ok',
@@ -133,17 +133,17 @@ get '/' => [qw/set_name/] => sub {
     my $page = $c->req->parameters->{page} || 1;
 
     my $entries = $self->dbh->select_all(qq[
-        SELECT keyword, description FROM entry
+        SELECT id, keyword, description FROM entry
         ORDER BY updated_at DESC
         LIMIT $INDEX_PER_PAGE
         OFFSET @{[ $INDEX_PER_PAGE * ($page-1) ]}
     ]);
-    my $star_map = $self->load_stars_multi(map { $_->{keyword} } @$entries );
+    my $star_map = $self->load_stars_multi(map { $_->{id} } @$entries );
 
     my $keyword_re = $self->load_entry_keyword_regexp;
     foreach my $entry (@$entries) {
         $entry->{html}  = $self->htmlify($c, $entry->{description}, $keyword_re);
-        $entry->{stars} = $star_map->{$entry->{keyword}};
+        $entry->{stars} = $star_map->{$entry->{id}};
     }
 
     my $total_entries = $self->dbh->select_one(q[
@@ -257,12 +257,12 @@ get '/keyword/:keyword' => [qw/set_name/] => sub {
     my $keyword = $c->args->{keyword} // $c->halt(400);
 
     my $entry = $self->dbh->select_row(qq[
-        SELECT keyword, description FROM entry
+        SELECT id, keyword, description FROM entry
         WHERE keyword = ?
     ], $keyword);
     $c->halt(404) unless $entry;
     $entry->{html}  = $self->htmlify($c, $entry->{description}, $self->load_entry_keyword_regexp);
-    $entry->{stars} = $self->load_stars($entry->{keyword});
+    $entry->{stars} = $self->load_stars($entry->{id});
 
     $c->render('keyword.tx', { entry => $entry });
 };
@@ -344,27 +344,27 @@ sub htmlify {
 }
 
 sub load_stars {
-    my ($self, $keyword) = @_;
+    my ($self, $entry_id) = @_;
 
     my $stars = $self->dbh->select_all(q[
-        SELECT user_name FROM star WHERE keyword = ?
-    ], $keyword);
+        SELECT user_name FROM star WHERE entry_id = ?
+    ], $entry_id);
 
     $stars;
 }
 
 sub load_stars_multi {
-    my ($self, @keywords) = @_;
+    my ($self, @ids) = @_;
 
-    my $in_sql = join(',', ('?') x scalar(@keywords));
+    my $in_sql = join(',', ('?') x scalar(@ids));
     my $stars = $self->dbh->select_all(qq[
-        SELECT keyword, user_name FROM star WHERE keyword IN ($in_sql)
-    ], @keywords);
+        SELECT entry_id, user_name FROM star WHERE entry_id IN ($in_sql)
+    ], @ids);
 
     my $ret = +{};
     for my $star (@$stars) {
-        $ret->{$star->{keyword}} //= [];
-        push @{ $ret->{$star->{keyword}} }, +{ user_name => $star->{user_name} };
+        $ret->{$star->{entry_id}} //= [];
+        push @{ $ret->{$star->{entry_id}} }, +{ user_name => $star->{user_name} };
     }
 
     $ret;
