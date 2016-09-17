@@ -97,7 +97,7 @@ get '/initialize' => sub {
     ], $total_entries);
 
     # CREATE TABLE entry_keyword_regexp (regex TEXT COLLATE utf8mb4_bin) ENGINE=MyISAM;
-    $self->dbh->query('TRUNCATE entry_keyword_regexp');
+    $self->remake_entry_keyword_regexp;
 
     $c->render_json({
         result => 'ok',
