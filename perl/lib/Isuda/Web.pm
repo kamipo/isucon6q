@@ -401,7 +401,8 @@ sub load_stars_multi {
 
     my $ret = +{};
     for my $star (@$stars) {
-        $ret->{$star->{keyword}} = $star->{user_name};
+        $ret->{$star->{keyword}} //= [];
+        push @{ $ret->{$star->{keyword}} }, +{ user_name => $star->{user_name} };
     }
 
     $ret;
