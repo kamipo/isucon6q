@@ -56,14 +56,9 @@ filter 'set_name' => sub {
         my ($self, $c) = @_;
         my $user_id = $c->env->{'psgix.session'}->{user_id};
         my $user_name = $c->env->{'psgix.session'}->{user_name};
-        #print "$user_id:$user_name\n";
         if ($user_id) {
             $c->stash->{user_id} = $user_id;
             $c->stash->{user_name} = $user_name;
-            #$c->stash->{user_name} = $self->dbh->select_one(q[
-            #    SELECT name FROM user
-            #    WHERE id = ?
-            #], $user_id);
             $c->halt(403) unless defined $c->stash->{user_name};
         }
         $app->($self,$c);
@@ -85,9 +80,6 @@ get '/initialize' => sub {
         DELETE FROM entry WHERE id > ?
     ], $default_entry_min_id);
     $self->dbh->query('TRUNCATE star');
-    #my $origin = config('isutar_origin');
-    #my $url = URI->new("$origin/initialize");
-    #Furl->new->get($url);
 
     # create table entry_count ( count int );
     # insert into entry_count set count=0;
