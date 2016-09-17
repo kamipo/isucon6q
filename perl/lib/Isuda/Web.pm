@@ -15,6 +15,7 @@ use Text::Xslate::Util qw/html_escape/;
 use List::Util qw/min max/;
 use Regexp::Assemble;
 
+my $JSON = JSON::XS->new->ascii;
 my $RE;
 init_regexp();
 
@@ -159,7 +160,8 @@ get '/' => [qw/set_name/] => sub {
     my $page = $c->req->parameters->{page} || 1;
 
     my $entries = $self->dbh->select_all(qq[
-        SELECT id, keyword, description FROM entry
+        SELECT id, keyword, ec.html AS content, ec.kw AS kw FROM entry
+        JOIN entry_cache ec ON entry.id = ec.entry_id
         ORDER BY updated_at DESC
         LIMIT $INDEX_PER_PAGE
         OFFSET @{[ $INDEX_PER_PAGE * ($page-1) ]}
@@ -168,7 +170,7 @@ get '/' => [qw/set_name/] => sub {
 
     my $keyword_re = $self->load_entry_keyword_regexp;
     foreach my $entry (@$entries) {
-        $entry->{html}  = $self->htmlify($c, $entry->{description}, $keyword_re);
+        $entry->{html}  = $self->htmlify($c, $entry->{content}, $JSON->decode($entry->{kw}), $keyword_re);
         $entry->{stars} = $star_map->{$entry->{id}};
     }
 
@@ -206,11 +208,28 @@ post '/keyword' => [qw/set_name authenticate/] => sub {
         author_id = ?, keyword = ?, description = ?, updated_at = NOW()
     ], ($user_id, $keyword, $description) x 2);
 
+    my $entry_id = $self->dbh->last_insert_id;
+
     $self->dbh->query(q[
         UPDATE entry_count SET count=count+1
     ]);
 
-    $self->remake_entry_keyword_regexp;
+    my $re = $self->remake_entry_keyword_regexp;
+
+    my $entries = $self->dbh->select_all(qq[
+        SELECT id, keyword, description FROM entry
+    ]);
+
+    my %kw2sha;
+    my $content = $description;
+    $content =~ s{($re|$RE)}{
+        my $kw = $1;
+        $kw2sha{$kw} = "isuda_" . sha1_hex(encode_utf8($kw));
+    }eg;
+
+    $self->dbh->query(q[
+        REPLACE INTO entry_cache (entry_id, html, kw) VALUES (?, ?, ?)
+    ], $entry_id, $content, encode_json(\%kw2sha));
 
     $c->redirect('/');
 };
@@ -283,11 +302,12 @@ get '/keyword/:keyword' => [qw/set_name/] => sub {
     my $keyword = $c->args->{keyword} // $c->halt(400);
 
     my $entry = $self->dbh->select_row(qq[
-        SELECT id, keyword, description FROM entry
+        SELECT id, keyword, ec.html AS content, ec.kw AS kw FROM entry
+        JOIN entry_cache ec ON entry.id = ec.entry_id
         WHERE keyword = ?
     ], $keyword);
     $c->halt(404) unless $entry;
-    $entry->{html}  = $self->htmlify($c, $entry->{description}, $self->load_entry_keyword_regexp);
+    $entry->{html}  = $self->htmlify($c, $entry->{content}, $JSON->decode($entry->{kw}), $self->load_entry_keyword_regexp);
     $entry->{stars} = $self->load_stars($entry->{id});
 
     $c->render('keyword.tx', { entry => $entry });
@@ -327,9 +347,12 @@ sub remake_entry_keyword_regexp {
         $ra->add(quotemeta $row->{keyword});
     }
 
+    my $re = $ra->as_string;
     $self->dbh->query(q[
         UPDATE entry_keyword_regexp SET regex=?
-    ], $ra->as_string);
+    ], $re);
+
+    return $re;
 }
 
 sub load_entry_keyword_regexp {
@@ -340,10 +363,10 @@ sub load_entry_keyword_regexp {
 }
 
 sub htmlify {
-    my ($self, $c, $content, $keyword_re) = @_;
+    my ($self, $c, $content, $kw, $keyword_re) = @_;
     return '' unless defined $content;
 
-    my %kw2sha;
+    my %kw2sha = %$kw;
     if (0) {
         my $keywords = $self->dbh->select_all(qq[
             SELECT * FROM entry ORDER BY length DESC
@@ -354,7 +377,7 @@ sub htmlify {
             $kw2sha{$kw} = "isuda_" . sha1_hex(encode_utf8($kw));
         }eg;
     } else {
-        $content =~ s{($keyword_re|$RE)}{
+        $content =~ s{($keyword_re)}{
             my $kw = $1;
             $kw2sha{$kw} = "isuda_" . sha1_hex(encode_utf8($kw));
         }eg;
