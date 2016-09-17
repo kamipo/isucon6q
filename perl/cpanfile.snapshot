@@ -311,13 +311,13 @@ DISTRIBUTIONS
       ExtUtils::MakeMaker 6.30
       strict 0
       warnings 0
-  ExtUtils-Helpers-0.025
-    pathname: L/LE/LEONT/ExtUtils-Helpers-0.025.tar.gz
+  ExtUtils-Helpers-0.026
+    pathname: L/LE/LEONT/ExtUtils-Helpers-0.026.tar.gz
     provides:
-      ExtUtils::Helpers 0.025
-      ExtUtils::Helpers::Unix 0.025
-      ExtUtils::Helpers::VMS 0.025
-      ExtUtils::Helpers::Windows 0.025
+      ExtUtils::Helpers 0.026
+      ExtUtils::Helpers::Unix 0.026
+      ExtUtils::Helpers::VMS 0.026
+      ExtUtils::Helpers::Windows 0.026
     requirements:
       Carp 0
       Exporter 5.57
@@ -1019,6 +1019,18 @@ DISTRIBUTIONS
       Proc::Wait3 0.05
     requirements:
       ExtUtils::MakeMaker 0
+  Regexp-Assemble-0.37
+    pathname: R/RS/RSAVAGE/Regexp-Assemble-0.37.tgz
+    provides:
+      Regexp::Assemble 0.37
+    requirements:
+      ExtUtils::MakeMaker 0
+      Test::More 1.001014
+      Test::Pod 1.48
+      constant 0
+      strict 0
+      vars 0
+      warnings 0
   Router-Boom-1.03
     pathname: T/TO/TOKUHIROM/Router-Boom-1.03.tar.gz
     provides:
@@ -1096,10 +1108,10 @@ DISTRIBUTIONS
       strict 0
       vars 0
       warnings 0
-  Test-Deep-1.120
-    pathname: R/RJ/RJBS/Test-Deep-1.120.tar.gz
+  Test-Deep-1.123
+    pathname: R/RJ/RJBS/Test-Deep-1.123.tar.gz
     provides:
-      Test::Deep 1.120
+      Test::Deep 1.123
       Test::Deep::All undef
       Test::Deep::Any undef
       Test::Deep::Array undef
@@ -1155,6 +1167,17 @@ DISTRIBUTIONS
       List::Util 1.09
       Scalar::Util 1.09
       Test::Builder 0
+  Test-Pod-1.51
+    pathname: E/ET/ETHER/Test-Pod-1.51.tar.gz
+    provides:
+      Test::Pod 1.51
+    requirements:
+      ExtUtils::MakeMaker 0
+      File::Find 0
+      Pod::Simple 3.05
+      Test::Builder::Tester 1.02
+      Test::More 0.62
+      perl 5.008
   Test-Requires-0.10
     pathname: T/TO/TOKUHIROM/Test-Requires-0.10.tar.gz
     provides:
