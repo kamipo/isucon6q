@@ -286,14 +286,12 @@ sub htmlify {
 
 sub load_stars {
     my ($self, $keyword) = @_;
-    my $origin = config('isutar_origin');
-    my $url = URI->new("$origin/stars");
-    $url->query_form(keyword => $keyword);
-    my $ua = Furl->new;
-    my $res = $ua->get($url);
-    my $data = decode_json $res->content;
 
-    $data->{stars};
+    my $stars = $self->dbh->select_all(q[
+        SELECT * FROM star WHERE keyword = ?
+    ], $keyword);
+
+    $stars;
 }
 
 sub is_spam_contents {
