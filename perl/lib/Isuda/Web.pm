@@ -396,7 +396,7 @@ sub load_stars_multi {
 
     my $in_sql = join(',', ('?') x scalar(@keywords));
     my $stars = $self->dbh->select_all(qq[
-        SELECT keyword, user_name FROM star WHERE keyword IN $in_sql
+        SELECT keyword, user_name FROM star WHERE keyword IN ($in_sql)
     ], @keywords);
 
     my $ret = +{};
