@@ -10,5 +10,5 @@ requires 'Plack::Middleware::Session';
 requires 'Starlet';
 requires 'String::Random';
 requires 'URI::Escape';
-requires 'Regexp::Assemble'
-requires 'Devel::KYTProf'
+requires 'Regexp::Assemble';
+requires 'Devel::KYTProf';
