@@ -331,8 +331,8 @@ sub remake_entry_cache {
     foreach my $entry (@$entries) {
         my $html = $self->htmlify($c, $entry->{description}, $keyword_re);
         $self->dbh->query(q[
-             INSERT INTO entry_cache SET entry_id=?, html=?
-        ], $entry->{id}, $entry->{html});
+             INSERT INTO entry_cache SET entry_id=?, html=? ON DUPLICATE KEY UPDATE html=?
+        ], $entry->{id}, $entry->{html}, $entry->{html});
     }
 }
 
