@@ -317,11 +317,11 @@ sub htmlify {
     my ($self, $c, $content) = @_;
     return '' unless defined $content;
 
+    my %kw2sha;
     if (0) {
         my $keywords = $self->dbh->select_all(qq[
             SELECT * FROM entry ORDER BY length DESC
         ]);
-        my %kw2sha;
         my $re = join '|', map { quotemeta $_->{keyword} } @$keywords;
         $content =~ s{($re)}{
             my $kw = $1;
