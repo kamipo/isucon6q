@@ -201,6 +201,7 @@ post '/register' => sub {
     my $user_id = register($self->dbh, $name, $pw);
 
     $c->env->{'psgix.session'}->{user_id} = $user_id;
+    $c->env->{'psgix.session'}->{name} = $name;
     $c->redirect('/');
 };
 
@@ -236,6 +237,7 @@ post '/login' => sub {
     }
 
     $c->env->{'psgix.session'}->{user_id} = $row->{id};
+    $c->env->{'psgix.session'}->{name} = $row->{name};
     $c->redirect('/');
 };
 
