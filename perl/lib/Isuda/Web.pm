@@ -7,7 +7,7 @@ use DBIx::Sunny;
 use Encode qw/encode_utf8/;
 use POSIX qw/ceil/;
 use Furl;
-use JSON::XS qw/decode_json/;
+use JSON::XS qw/decode_json encode_json/;
 use String::Random qw/random_string/;
 use Digest::SHA1 qw/sha1_hex/;
 use URI::Escape qw/uri_escape_utf8/;
@@ -76,9 +76,15 @@ filter 'authenticate' => sub {
 
 get '/initialize' => sub {
     my ($self, $c)  = @_;
+
     $self->dbh->query(q[
         DELETE FROM entry WHERE id > ?
     ], $default_entry_min_id);
+
+    $self->dbh->query(q[
+        DELETE FROM entry_cache WHERE entry_id > ?
+    ], $default_entry_min_id);
+
     $self->dbh->query('TRUNCATE star');
 
     # create table entry_count ( count int );
@@ -96,6 +102,27 @@ get '/initialize' => sub {
     $c->render_json({
         result => 'ok',
     });
+};
+
+get '/initialize_entry_cache' => sub {
+    my ($self, $c)  = @_;
+
+    my $entries = $self->dbh->select_all(qq[
+        SELECT id, keyword, description FROM entry
+    ]);
+
+    foreach my $entry (@$entries) {
+        my %kw2sha;
+        my $content = $entry->{description};
+        $content =~ s{$RE}{
+            my $kw = $1;
+            $kw2sha{$kw} = "isuda_" . sha1_hex(encode_utf8($kw));
+        }eg;
+
+        $self->dbh->query(q[
+            REPLACE INTO entry_count (entry_id, html, kw) VALUES (?, ?, ?)
+        ], $entry->{id}, $content, encode_json(\%kw2sha));
+    }
 };
 
 post '/stars' => sub {
