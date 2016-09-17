@@ -179,7 +179,7 @@ post '/keyword' => [qw/set_name authenticate/] => sub {
 
     $self->dbh->query(q[
         UPDATE entry_count SET count=count+1
-    ], $total_entries);
+    ]);
 
     $c->redirect('/');
 };
@@ -276,7 +276,7 @@ post '/keyword/:keyword' => [qw/set_name authenticate/] => sub {
     ], $keyword);
     $self->dbh->query(q[
         UPDATE entry_count SET count=count-1
-    ], $total_entries);
+    ]);
 
     $c->redirect('/');
 };
