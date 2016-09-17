@@ -145,13 +145,15 @@ get '/' => [qw/set_name/] => sub {
         LIMIT $INDEX_PER_PAGE
         OFFSET @{[ $INDEX_PER_PAGE * ($page-1) ]}
     ]);
+    my $star_map = $self->load_stars_multi(map { $_->{keyword} @$entries });
+
     my $keyword_re;
     foreach my $entry (@$entries) {
         unless (defined $entry->{html}) {
             $keyword_re    //= $self->load_entry_keyword_regexp;
             $entry->{html}   = $self->htmlify($c, $entry->{description}, $keyword_re);
         }
-        $entry->{stars}   = $self->load_stars($entry->{keyword});
+        $entry->{stars}   = $star_map->{$entry->{keyword}};
     }
 
     my $total_entries = $self->dbh->select_one(q[
@@ -384,10 +386,26 @@ sub load_stars {
     my ($self, $keyword) = @_;
 
     my $stars = $self->dbh->select_all(q[
-        SELECT * FROM star WHERE keyword = ?
+        SELECT user_name FROM star WHERE keyword = ?
     ], $keyword);
 
     $stars;
+}
+
+sub load_stars_multi {
+    my ($self, @keywords) = @_;
+
+    my $in_sql = join(',', ('?') x scalar(@keywords));
+    my $stars = $self->dbh->select_all(qq[
+        SELECT keyword, user_name FROM star WHERE keyword IN $in_sql
+    ], @keywords);
+
+    my $ret = +{};
+    for my $star (@$stars) {
+        $ret->{$star->{keyword}} = $star->{user_name};
+    }
+
+    $ret;
 }
 
 sub is_spam_contents {
