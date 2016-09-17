@@ -79,6 +79,16 @@ get '/initialize' => sub {
     #my $origin = config('isutar_origin');
     #my $url = URI->new("$origin/initialize");
     #Furl->new->get($url);
+
+    # create table entry_count ( count int );
+    # insert into entry_count set count=0;
+    my $total_entries = $self->dbh->select_one(q[
+        SELECT COUNT(*) FROM entry
+    ]);
+    $self->dbh->query(q[
+        UPDATE entry_count SET count=?
+    ], $total_entries);
+
     $c->render_json({
         result => 'ok',
     });
@@ -135,7 +145,7 @@ get '/' => [qw/set_name/] => sub {
     }
 
     my $total_entries = $self->dbh->select_one(q[
-        SELECT COUNT(*) FROM entry
+        SELECT count FROM entry_count
     ]);
     my $last_page = ceil($total_entries / $PER_PAGE);
     my @pages = (max(1, $page-5)..min($last_page, $page+5));
@@ -166,6 +176,10 @@ post '/keyword' => [qw/set_name authenticate/] => sub {
         ON DUPLICATE KEY UPDATE
         author_id = ?, keyword = ?, description = ?, updated_at = NOW()
     ], ($user_id, $keyword, $description) x 2);
+
+    $self->dbh->query(q[
+        UPDATE entry_count SET count=count+1
+    ], $total_entries);
 
     $c->redirect('/');
 };
@@ -260,6 +274,10 @@ post '/keyword/:keyword' => [qw/set_name authenticate/] => sub {
         DELETE FROM entry
         WHERE keyword = ?
     ], $keyword);
+    $self->dbh->query(q[
+        UPDATE entry_count SET count=count-1
+    ], $total_entries);
+
     $c->redirect('/');
 };
 
