@@ -149,8 +149,9 @@ get '/' => [qw/set_name/] => sub {
         LIMIT $PER_PAGE
         OFFSET @{[ $PER_PAGE * ($page-1) ]}
     ]);
+    my $keyword_re = $self->load_entry_keyword_regexp;
     foreach my $entry (@$entries) {
-        $entry->{html}  = $self->htmlify($c, $entry->{description});
+        $entry->{html}  = $self->htmlify($c, $entry->{description}, $keyword_re);
         $entry->{stars} = $self->load_stars($entry->{keyword});
     }
 
@@ -268,7 +269,7 @@ get '/keyword/:keyword' => [qw/set_name/] => sub {
         WHERE keyword = ?
     ], $keyword);
     $c->halt(404) unless $entry;
-    $entry->{html} = $self->htmlify($c, $entry->{description});
+    $entry->{html} = $self->htmlify($c, $entry->{description}, $self->load_entry_keyword_regexp);
     $entry->{stars} = $self->load_stars($entry->{keyword});
 
     $c->render('keyword.tx', { entry => $entry });
@@ -313,8 +314,15 @@ sub remake_entry_keyword_regexp {
     ], $ra->as_string);
 }
 
+sub load_entry_keyword_regexp {
+    my $self = shift;
+    my $re = $self->dbh->select_one(q[
+        SELECT regex FROM entry_keyword_regexp
+    ]);
+}
+
 sub htmlify {
-    my ($self, $c, $content) = @_;
+    my ($self, $c, $content, $keyword_re) = @_;
     return '' unless defined $content;
 
     my %kw2sha;
@@ -328,10 +336,7 @@ sub htmlify {
             $kw2sha{$kw} = "isuda_" . sha1_hex(encode_utf8($kw));
         }eg;
     } else {
-        my $re = $self->dbh->select_one(q[
-            SELECT regex FROM entry_keyword_regexp
-        ]);
-        $content =~ s{($re|$RE)}{
+        $content =~ s{($keyword_re|$RE)}{
             my $kw = $1;
             $kw2sha{$kw} = "isuda_" . sha1_hex(encode_utf8($kw));
         }eg;
