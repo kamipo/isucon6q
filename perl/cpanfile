@@ -11,3 +11,4 @@ requires 'Starlet';
 requires 'String::Random';
 requires 'URI::Escape';
 requires 'Regexp::Assemble'
+requires 'Devel::KYTProf'
