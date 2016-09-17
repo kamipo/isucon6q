@@ -191,7 +191,7 @@ post '/keyword' => [qw/set_name authenticate/] => sub {
         UPDATE entry_count SET count=count+1
     ]);
 
-    $self->entry_keyword_regexp;
+    $self->remake_entry_keyword_regexp;
 
     $c->redirect('/');
 };
@@ -292,7 +292,7 @@ post '/keyword/:keyword' => [qw/set_name authenticate/] => sub {
         UPDATE entry_count SET count=count-1
     ]);
 
-    $self->entry_keyword_regexp;
+    $self->remake_entry_keyword_regexp;
 
     $c->redirect('/');
 };
