@@ -114,15 +114,22 @@ get '/initialize_entry_cache' => sub {
     foreach my $entry (@$entries) {
         my %kw2sha;
         my $content = $entry->{description};
-        $content =~ s{$RE}{
+        $content =~ s{($RE)}{
             my $kw = $1;
             $kw2sha{$kw} = "isuda_" . sha1_hex(encode_utf8($kw));
         }eg;
 
+        #use Data::Dumper;
+        #print Dumper \%kw2sha;
+        #print encode_json(\%kw2sha);
         $self->dbh->query(q[
-            REPLACE INTO entry_count (entry_id, html, kw) VALUES (?, ?, ?)
+            REPLACE INTO entry_cache (entry_id, html, kw) VALUES (?, ?, ?)
         ], $entry->{id}, $content, encode_json(\%kw2sha));
     }
+
+    $c->render_json({
+        result => 'ok',
+    });
 };
 
 post '/stars' => sub {
