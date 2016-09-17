@@ -100,7 +100,7 @@ get '/initialize' => sub {
     $self->remake_entry_keyword_regexp;
 
     # CREATE TABLE entry_cache ( entry_id bigint unsigned NOT NULL, html TEXT COLLATE utf8mb4_bin, PRIMARY KEY(entry_id) );
-    $self->remake_entry_cache;
+    $self->remake_entry_cache($c);
 
     $c->render_json({
         result => 'ok',
@@ -202,7 +202,7 @@ post '/keyword' => [qw/set_name authenticate/] => sub {
     ]);
 
     $self->remake_entry_keyword_regexp;
-    $self->remake_entry_cache;
+    $self->remake_entry_cache($c);
 
     $c->redirect('/');
 };
@@ -309,13 +309,13 @@ post '/keyword/:keyword' => [qw/set_name authenticate/] => sub {
     ]);
 
     $self->remake_entry_keyword_regexp;
-    $self->remake_entry_cache;
+    $self->remake_entry_cache($c);
 
     $c->redirect('/');
 };
 
 sub remake_entry_cache {
-    my $self = shift;
+    my($self, $c) = @_;
 
     my $entries = $self->dbh->select_all(qq[
         SELECT id, description FROM entry
