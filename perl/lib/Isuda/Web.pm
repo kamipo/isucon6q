@@ -340,7 +340,11 @@ sub remake_entry_keyword_regexp {
     my $self = shift;
 
     my $keywords = $self->dbh->select_all(qq[
-        SELECT keyword FROM entry WHERE id > ?  ORDER BY length DESC
+        SELECT keyword FROM entry
+        WHERE id > ?
+           OR keyword = '楕円曲線'
+           OR keyword = 'ホルベルト・カブレラ'
+        ORDER BY length DESC
     ], $default_entry_min_id);
     my $ra = Regexp::Assemble->new;
     for my $row (@$keywords) {
